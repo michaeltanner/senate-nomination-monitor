@@ -1,76 +1,92 @@
-# Senate Nomination Monitor Setup Instructions
+# Senate Nomination Monitor
 
-This repository contains a simple Python script and GitHub Actions workflow designed to monitor the confirmation status of Presidential Nominations (PNs) on Congress.gov.
-
-Whenever a status changes on Congress.gov, you will receive a push notification on your Android phone for free.
+An automated, serverless monitor that tracks the confirmation status of Presidential Nominations (PNs) on Congress.gov and sends push notifications to your Android phone for free via **ntfy.sh**.
 
 ---
 
-## Step 1: Set up the **ntfy** App on Your Android Phone
+## Features
 
-1. Download the free, open-source **ntfy** app:
-   - [Google Play Store](https://play.google.com/store/apps/details?id=io.heckel.ntfy)
-   - [F-Droid](https://f-droid.org/en/packages/io.heckel.ntfy/)
-2. Open the app and click the **+ (Plus)** button to subscribe to a new topic.
-3. Choose a unique, random name for your topic (e.g., `senate-nomination-alerts-xyz789`) so others do not accidentally receive your notifications.
-4. Subscribe to the topic. Keep the app open or running in the background.
+* **Configurable Tracking**: Declare which nominations to track in `config.json`.
+* **Chronological Playback**: On first subscription, the script automatically sends a push notification for **every** historical action in chronological order (oldest to newest).
+* **Smart Alerting**: Subsequent scheduled runs check for updates and only alert you when new actions occur.
+* **Local Validation**: Includes a command-line script (`validate.py`) to test your setup and verify API connectivity and actions history before deploying.
 
 ---
 
-## Step 2: Push this Repository to GitHub
+## Local Setup & Validation
 
-If you haven't initialized git in this folder yet, run these commands in your terminal:
+Before pushing to GitHub, you should verify your configuration and API key locally:
 
-```bash
-git init
-git add .
-git commit -m "Initial commit of nomination monitor"
-```
+1. **Verify `config.json`**:
+   Ensure `config.json` contains the correct Congress and nomination number you wish to track:
+   ```json
+   {
+     "nominations": [
+       {
+         "congress": "119",
+         "nomination": "1048",
+         "label": "Brig Gen Jason Voorheis"
+       }
+     ]
+   }
+   ```
 
-Then, create a repository on GitHub and run:
+2. **Run Validation**:
+   Open a terminal in this folder, set your API key environment variable, and run the validation script:
+   
+   **PowerShell (Windows)**:
+   ```powershell
+   $env:CONGRESS_API_KEY="your_actual_api_key"
+   python validate.py
+   ```
+   
+   **Bash (Mac/Linux)**:
+   ```bash
+   export CONGRESS_API_KEY="your_actual_api_key"
+   python validate.py
+   ```
 
-```bash
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-git push -u origin main
-```
+   The script will print out the full history of Senate actions for your configured nominations.
+
+3. **Optional: Test Phone Notifications**:
+   If you set your `NTFY_TOPIC` environment variable as well, you can run:
+   ```bash
+   python validate.py --test-notify
+   ```
+   This will send a test alert directly to your phone.
 
 ---
 
-## Step 3: Configure GitHub Actions Secrets
+## Deployment to GitHub Actions
 
-For security, the script looks for your private topic name and optional API keys in GitHub Secrets:
+To run the monitor on a regular schedule for free:
 
-1. Go to your GitHub repository in your browser.
-2. Navigate to **Settings** > **Secrets and variables** > **Actions**.
-3. Click **New repository secret**.
-4. Add the following secrets:
-   - **`NTFY_TOPIC`**: The unique topic name you subscribed to in Step 1 (e.g., `senate-nomination-alerts-xyz789`).
-   - **`CONGRESS_API_KEY`** *(Optional)*: You can register a free API key at [api.data.gov](https://api.data.gov/) and add it here. If omitted, the script will use `DEMO_KEY` (which works but has lower hourly rate limits).
+### Step 1: Push to GitHub
+1. Create a **private** repository on GitHub (e.g. `senate-nomination-monitor`).
+2. Run these commands in your local folder:
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit of monitor"
+   git branch -M main
+   git remote add origin https://github.com/YOUR_USERNAME/senate-nomination-monitor.git
+   git push -u origin main
+   ```
 
----
+### Step 2: Configure Actions Secrets
+Navigate to your GitHub repository: **Settings** > **Secrets and variables** > **Actions** and add two **Repository Secrets**:
+* **`CONGRESS_API_KEY`** (Required): Your personal API key from [api.data.gov](https://api.data.gov/). (A dedicated key is required because GitHub Action's shared IPs are heavily rate-limited).
+* **`NTFY_TOPIC`** (Required): The unique topic name you subscribed to in the ntfy mobile app (e.g., `senate-nomination-alerts-xyz789`).
 
-## Step 4: Enable Workflow Writing Permissions
-
-Because the action commits the updated status back to the repository (e.g., `status_*.json`), you must give GitHub Actions write permissions:
-
-1. In your GitHub repository, go to **Settings** > **Actions** > **General**.
-2. Scroll down to **Workflow permissions**.
-3. Select **Read and write permissions**.
-4. Click **Save**.
-
----
-
-## Configuring Which Nomination to Track
-
-By default, the script checks the Congress and nomination number specified in `monitor.py` or configured via GitHub environment variables:
-* **`CONGRESS_NUMBER`**: The Congress session (e.g., `119` for the 2025–2026 session).
-* **`NOMINATION_NUMBER`**: The Presidential Nomination (PN) number (e.g., `1048`).
+### Step 3: Enable Write Permissions
+1. Go to **Settings** > **Actions** > **General**.
+2. Scroll to the bottom to **Workflow permissions**.
+3. Select **Read and write permissions** and click **Save** (this allows the action to commit and save the updated status file back to the repository).
 
 ---
 
 ## How It Works
 
-* **Automatic Schedule**: The workflow runs automatically on a scheduled interval.
-* **Manual Check**: You can manually trigger a check at any time by going to the **Actions** tab in your GitHub repository, clicking **Monitor Senate Confirmation**, and clicking **Run workflow**.
-* **Persistent Logs**: Every check is automatically recorded in `history_log.txt` in your repository.
+* **Trigger**: Runs automatically every 3 hours.
+* **Logs**: The execution history is written to `history_log.txt` inside your repository on every run.
+* **State Preservation**: The notified history for each nomination is saved in `status_{congress}_{nomination}.json`.
