@@ -39,7 +39,10 @@ jobs:
         run: |
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "actions@github.com"
-          git add status_*.json
+          # Only add if files exist to prevent shell expansion errors
+          if ls status_*.json 1> /dev/null 2>&1; then
+            git add status_*.json
+          fi
           # Only commit and push if there are changes to commit
           if ! git diff --cached --quiet; then
             git commit -m "chore: update nomination status [skip ci]"
