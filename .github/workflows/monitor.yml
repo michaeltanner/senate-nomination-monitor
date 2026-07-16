@@ -43,6 +43,9 @@ jobs:
           if ls status_*.json 1> /dev/null 2>&1; then
             git add status_*.json
           fi
+          if [ -f history_log.txt ]; then
+            git add history_log.txt
+          fi
           # Only commit and push if there are changes to commit
           if ! git diff --cached --quiet; then
             git commit -m "chore: update nomination status [skip ci]"
