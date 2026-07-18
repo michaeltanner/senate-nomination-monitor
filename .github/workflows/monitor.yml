@@ -1,9 +1,9 @@
 name: Monitor Senate Confirmation
 
 on:
-  schedule:
-    # Run every 30 minutes with an offset (at minutes 13 and 43 of the hour)
-    - cron: '13,43 * * * *'
+#   schedule:
+#     # Run every 30 minutes with an offset (at minutes 13 and 43 of the hour)
+#     - cron: '13,43 * * * *'
   workflow_dispatch: # Allows manual runs from the GitHub UI
 
 permissions:

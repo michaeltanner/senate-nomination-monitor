@@ -1,6 +1,6 @@
 # Senate Nomination Monitor
 
-An automated, serverless monitor that tracks the confirmation status of Presidential Nominations (PNs) on Congress.gov and sends push notifications to your Android phone for free via **ntfy.sh**.
+An automated, serverless monitor that tracks the confirmation status of Presidential Nominations (PNs) on Congress.gov and sends push notifications to your mobile phone (Android/iOS) for free via **ntfy.sh**.
 
 ---
 
@@ -10,6 +10,60 @@ An automated, serverless monitor that tracks the confirmation status of Presiden
 * **Chronological Playback**: On first subscription, the script automatically sends a push notification for **every** historical action in chronological order (oldest to newest).
 * **Smart Alerting**: Subsequent scheduled runs check for updates and only alert you when new actions occur.
 * **Local Validation**: Includes a command-line script (`validate.py`) to test your setup and verify API connectivity and actions history before deploying.
+
+---
+
+## How to Configure the Automatic Schedule (Cron)
+
+You can control how often the monitor runs automatically by editing the schedule in the `.github/workflows/monitor.yml` file. 
+
+The schedule uses the standard **cron syntax** (written in UTC time):
+
+### Scheduling Examples:
+
+#### 1. Turn Off Automatic Runs (Never Run Automatically)
+To disable automatic monitoring and only run the script when you manually click the "Run workflow" button, edit the workflow file so that `on:` only contains `workflow_dispatch`:
+```yaml
+on:
+  workflow_dispatch: # Allows manual runs from the GitHub UI
+```
+
+#### 2. Run Every X Minutes
+* **Every 15 minutes**:
+  ```yaml
+  on:
+    schedule:
+      - cron: '*/15 * * * *'
+  ```
+  *(Note: GitHub Actions has a minimum limit of 5 minutes, and high-frequency runs may experience queue delays).*
+
+#### 3. Run Every X Hours
+* **Every 3 hours** (at minute 0):
+  ```yaml
+  on:
+    schedule:
+      - cron: '0 */3 * * *'
+  ```
+* **Every 3 hours with an offset** (at minutes 13 and 43 of the hour, to avoid server congestion):
+  ```yaml
+  on:
+    schedule:
+      - cron: '13,43 * * * *'
+  ```
+
+#### 4. Run Every X Days
+* **Once a day at midnight UTC**:
+  ```yaml
+  on:
+    schedule:
+      - cron: '0 0 * * *'
+  ```
+* **Every 2 days at noon UTC**:
+  ```yaml
+  on:
+    schedule:
+      - cron: '0 12 */2 * *'
+  ```
 
 ---
 
@@ -87,6 +141,6 @@ Navigate to your GitHub repository: **Settings** > **Secrets and variables** > *
 
 ## How It Works
 
-* **Trigger**: Runs automatically every 3 hours.
+* **Trigger**: Configured via the `schedule` setting in your workflow.
 * **Logs**: The execution history is written to `history_log.txt` inside your repository on every run.
 * **State Preservation**: The notified history for each nomination is saved in `status_{congress}_{nomination}.json`.
